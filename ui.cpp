@@ -34,7 +34,7 @@ void change_color(Color color, Color bg)
 }
 
 void print_piece(Piece p, Color bg) {
-	bool print_pawn_number = false;
+	bool print_numbers = false;
 
 	switch (p) {
 	case PIECE_NONE: {
@@ -50,7 +50,7 @@ void print_piece(Piece p, Color bg) {
 	case PIECE_WHITE_PAWN_6:
 	case PIECE_WHITE_PAWN_7: {
 		change_color(WHITE, bg);
-		if(print_pawn_number)
+		if(print_numbers)
 			printf("P%d", p);
 		else
 			printf("P ");
@@ -65,7 +65,7 @@ void print_piece(Piece p, Color bg) {
 	case PIECE_BLACK_PAWN_6:
 	case PIECE_BLACK_PAWN_7: {
 		change_color(BLACK, bg);
-		if (print_pawn_number)
+		if (print_numbers)
 			printf("P%d", p - 8);
 		else
 			printf("P ");
@@ -92,34 +92,53 @@ void print_piece(Piece p, Color bg) {
 	case PIECE_WHITE_ROOK_0:
 	case PIECE_WHITE_ROOK_1: {
 		change_color(WHITE, bg);
-		printf("R ");
+		if(print_numbers)
+			printf("R%d", p - PIECE_WHITE_ROOK_0 + 1);
+		else
+			printf("R ");
 	}break;
 	case PIECE_BLACK_ROOK_0:
 	case PIECE_BLACK_ROOK_1: {
 		change_color(BLACK, bg);
-		printf("R ");
+		if (print_numbers)
+			printf("R%d", p - PIECE_BLACK_ROOK_0 + 1);
+		else
+			printf("R ");
+
 	}break;
 
 	case PIECE_WHITE_BISHOP_0:
 	case PIECE_WHITE_BISHOP_1: {
 		change_color(WHITE, bg);
-		printf("B ");
+		if (print_numbers)
+			printf("B%d", p - PIECE_WHITE_BISHOP_0 + 1);
+		else
+			printf("B ");
 	}break;
 	case PIECE_BLACK_BISHOP_0:
 	case PIECE_BLACK_BISHOP_1: {
 		change_color(BLACK, bg);
-		printf("B ");
+		if(print_numbers)
+			printf("B%d", p - PIECE_BLACK_BISHOP_0 + 1);
+		else
+			printf("B ");
 	}break;
 
 	case PIECE_WHITE_KNIGHT_0:
 	case PIECE_WHITE_KNIGHT_1: {
 		change_color(WHITE, bg);
-		printf("N ");
+		if (print_numbers)
+			printf("N%d", p - PIECE_WHITE_KNIGHT_0 + 1);
+		else
+			printf("N ");
 	}break;
 	case PIECE_BLACK_KNIGHT_0:
 	case PIECE_BLACK_KNIGHT_1: {
 		change_color(BLACK, bg);
-		printf("N ");
+		if(print_numbers)
+			printf("N%d", p - PIECE_BLACK_KNIGHT_0 + 1);
+		else
+			printf("N ");
 	}break;
 	default: {
 		change_color(NEUTRAL, bg);
@@ -130,7 +149,6 @@ void print_piece(Piece p, Color bg) {
 
 void print_board(Game_State* state, bool flip = false) 
 {
-	system("cls");
 	Board &b = state->board;
 	Color bg = WHITE;
 	reset_color();

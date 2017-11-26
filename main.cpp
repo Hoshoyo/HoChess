@@ -1,6 +1,6 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "common.h"
 #include "chess.h"
+#include "util.h"
 
 void print_board(Game_State* state, bool flip = false);
 
@@ -12,8 +12,8 @@ int main(int argc, char** argv)
 	Game_State state;
 	while (true) {
 		print_board(&state);
-		scanf("%d %d", &line, &column);
-		scanf("%d %d", &line_to, &column_to);
+		u32 length;
+		s8* buffer = read_console(&length);
 	}
 	return 0;
 }
