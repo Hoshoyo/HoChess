@@ -4,11 +4,21 @@
 enum Color {
 	WHITE,
 	BLACK,
+	GREEN,
 	NEUTRAL
 };
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
+void DEBUG_test_colors() {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	for (int i = 0; i < 1024; ++i) {
+		SetConsoleTextAttribute(hConsole, i);
+		printf("%d HELLO\n", i);
+	}
+	return;
+}
+
 void reset_color()
 {
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -32,9 +42,19 @@ void change_color(Color color, Color bg)
 			SetConsoleTextAttribute(hConsole, 128);
 		else
 			SetConsoleTextAttribute(hConsole, 112);
+	} else if (color == GREEN) {
+		if (bg == BLACK) {
+			SetConsoleTextAttribute(hConsole, 138);
+		} else {
+			SetConsoleTextAttribute(hConsole, 122);
+		}
 	}
 }
 #elif defined(__linux__)
+
+void DEBUG_test_color() {
+}
+
 void reset_color()
 {
 	printf("\033[0m");
@@ -47,21 +67,25 @@ void change_color(Color color, Color bg)
 		if (bg == BLACK)
 			printf("\033[1;40;1;37m");
 		else
-			printf("\033[1;47;1;37m");
+			printf("\033[1;46;1;37m");
 	}
 	else if (color == BLACK || color == NEUTRAL)
 	{
 		if (bg == BLACK)
 			printf("\033[1;40;1;30m");
 		else
-			printf("\033[1;47;1;30m");
+			printf("\033[1;46;1;30m");
+	} else if(color == GREEN) {
+		if(bg == BLACK)
+			printf("\033[1:40;1;30m");
+		else
+			printf("\033[1:46;1;30m");
 	}
-
 }
 #endif
 
 void print_piece(Piece p, Color bg) {
-	bool print_pawn_number = false;
+	bool print_numbers = false;
 
 	switch (p) {
 	case PIECE_NONE: {
@@ -77,7 +101,7 @@ void print_piece(Piece p, Color bg) {
 	case PIECE_WHITE_PAWN_6:
 	case PIECE_WHITE_PAWN_7: {
 		change_color(WHITE, bg);
-		if(print_pawn_number)
+		if(print_numbers)
 			printf("P%d", p);
 		else
 			printf("P ");
@@ -92,7 +116,7 @@ void print_piece(Piece p, Color bg) {
 	case PIECE_BLACK_PAWN_6:
 	case PIECE_BLACK_PAWN_7: {
 		change_color(BLACK, bg);
-		if (print_pawn_number)
+		if (print_numbers)
 			printf("P%d", p - 8);
 		else
 			printf("P ");
@@ -119,34 +143,58 @@ void print_piece(Piece p, Color bg) {
 	case PIECE_WHITE_ROOK_0:
 	case PIECE_WHITE_ROOK_1: {
 		change_color(WHITE, bg);
-		printf("R ");
+		if(print_numbers)
+			printf("R%d", p - PIECE_WHITE_ROOK_0 + 1);
+		else
+			printf("R ");
 	}break;
 	case PIECE_BLACK_ROOK_0:
 	case PIECE_BLACK_ROOK_1: {
 		change_color(BLACK, bg);
-		printf("R ");
+		if (print_numbers)
+			printf("R%d", p - PIECE_BLACK_ROOK_0 + 1);
+		else
+			printf("R ");
+
 	}break;
 
 	case PIECE_WHITE_BISHOP_0:
 	case PIECE_WHITE_BISHOP_1: {
 		change_color(WHITE, bg);
-		printf("B ");
+		if (print_numbers)
+			printf("B%d", p - PIECE_WHITE_BISHOP_0 + 1);
+		else
+			printf("B ");
 	}break;
 	case PIECE_BLACK_BISHOP_0:
 	case PIECE_BLACK_BISHOP_1: {
 		change_color(BLACK, bg);
-		printf("B ");
+		if(print_numbers)
+			printf("B%d", p - PIECE_BLACK_BISHOP_0 + 1);
+		else
+			printf("B ");
 	}break;
 
 	case PIECE_WHITE_KNIGHT_0:
 	case PIECE_WHITE_KNIGHT_1: {
 		change_color(WHITE, bg);
-		printf("N ");
+		if (print_numbers)
+			printf("N%d", p - PIECE_WHITE_KNIGHT_0 + 1);
+		else
+			printf("N ");
 	}break;
 	case PIECE_BLACK_KNIGHT_0:
 	case PIECE_BLACK_KNIGHT_1: {
 		change_color(BLACK, bg);
-		printf("N ");
+		if(print_numbers)
+			printf("N%d", p - PIECE_BLACK_KNIGHT_0 + 1);
+		else
+			printf("N ");
+	}break;
+	case PIECE_MARK: {
+		//change_color(GREEN, bg);
+		change_color(WHITE, bg);
+		printf("X ");
 	}break;
 	default: {
 		change_color(NEUTRAL, bg);
@@ -170,9 +218,15 @@ void print_board(Game_State* state, bool flip = false)
 			for (int j = 0; j < 8; ++j) {
 				print_piece(state->board.piece[i][j], bg);
 				reset_color();
+				Piece p = state->board.piece[i][j];
+				if (p == PIECE_NONE && state->DEBUG_marks.piece[i][j] == PIECE_MARK) {
+					print_piece(PIECE_MARK, bg);
+				} else
+					print_piece(p, bg);
 				bg = (Color)!bg;
 			}
 			bg = (Color)!bg;
+			reset_color();
 			printf("\n");
 		}
 	} else {
@@ -180,11 +234,61 @@ void print_board(Game_State* state, bool flip = false)
 			reset_color();
 			printf("%d ", i + 1);
 			for (int j = 0; j < 8; ++j) {
-				print_piece(state->board.piece[i][j], bg);
-				reset_color();
+				Piece p = state->board.piece[i][j];
+				if (p == PIECE_NONE && state->DEBUG_marks.piece[i][j] == PIECE_MARK) {
+					print_piece(PIECE_MARK, bg);
+				} else {
+					print_piece(p, bg);
+				}
 				bg = (Color)!bg;
 			}
 			bg = (Color)!bg;
+			reset_color();
+			printf("\n");
+		}
+	}
+	reset_color();
+}
+
+void print_board_marks(Game_State* state, bool flip = false)
+{
+	Board &b = state->board;
+	Color bg = WHITE;
+	reset_color();
+	printf("  A B C D E F G H\n");
+
+	if (flip) {
+		for (int i = 0; i < 8; ++i) {
+			reset_color();
+			printf("%d ", i + 1);
+			for (int j = 0; j < 8; ++j) {
+				Piece p = state->board.piece[i][j];
+				if (state->DEBUG_marks.piece[i][j] == PIECE_MARK) {
+					print_piece(PIECE_MARK, bg);
+				} else {
+					print_piece(PIECE_NONE, bg);
+				}
+				bg = (Color)!bg;
+			}
+			bg = (Color)!bg;
+			reset_color();
+			printf("\n");
+		}
+	} else {
+		for (int i = 7; i >= 0; --i) {
+			reset_color();
+			printf("%d ", i + 1);
+			for (int j = 0; j < 8; ++j) {
+				Piece p = state->board.piece[i][j];
+				if (state->DEBUG_marks.piece[i][j] == PIECE_MARK) {
+					print_piece(PIECE_MARK, bg);
+				} else {
+					print_piece(PIECE_NONE, bg);
+				}
+				bg = (Color)!bg;
+			}
+			bg = (Color)!bg;
+			reset_color();
 			printf("\n");
 		}
 	}
