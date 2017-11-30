@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include <string.h>
 
 enum Player {
 	PLAYER_WHITE,

@@ -37,5 +37,5 @@ typedef struct {
 } Window_State;
 
 #else
-#error OS not yet supported
+//#error OS not yet supported
 #endif
