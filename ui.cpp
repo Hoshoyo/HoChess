@@ -4,8 +4,18 @@
 enum Color {
 	WHITE,
 	BLACK,
+	GREEN,
 	NEUTRAL
 };
+
+void DEBUG_test_colors() {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	for (int i = 0; i < 1024; ++i) {
+		SetConsoleTextAttribute(hConsole, i);
+		printf("%d HELLO\n", i);
+	}
+	return;
+}
 
 void reset_color()
 {
@@ -30,6 +40,12 @@ void change_color(Color color, Color bg)
 			SetConsoleTextAttribute(hConsole, 128);
 		else
 			SetConsoleTextAttribute(hConsole, 112);
+	} else if (color == GREEN) {
+		if (bg == BLACK) {
+			SetConsoleTextAttribute(hConsole, 138);
+		} else {
+			SetConsoleTextAttribute(hConsole, 122);
+		}
 	}
 }
 
@@ -140,6 +156,10 @@ void print_piece(Piece p, Color bg) {
 		else
 			printf("N ");
 	}break;
+	case PIECE_MARK: {
+		change_color(GREEN, bg);
+		printf("X ");
+	}break;
 	default: {
 		change_color(NEUTRAL, bg);
 		printf("  ");
@@ -159,7 +179,11 @@ void print_board(Game_State* state, bool flip = false)
 			reset_color();
 			printf("%d ", i + 1);
 			for (int j = 0; j < 8; ++j) {
-				print_piece(state->board.piece[i][j], bg);
+				Piece p = state->board.piece[i][j];
+				if (p == PIECE_NONE && state->DEBUG_marks.piece[i][j] == PIECE_MARK) {
+					print_piece(PIECE_MARK, bg);
+				} else
+					print_piece(p, bg);
 				bg = (Color)!bg;
 			}
 			bg = (Color)!bg;
@@ -170,7 +194,53 @@ void print_board(Game_State* state, bool flip = false)
 			reset_color();
 			printf("%d ", i + 1);
 			for (int j = 0; j < 8; ++j) {
-				print_piece(state->board.piece[i][j], bg);
+				Piece p = state->board.piece[i][j];
+				if (p == PIECE_NONE && state->DEBUG_marks.piece[i][j] == PIECE_MARK) {
+					print_piece(PIECE_MARK, bg);
+				} else
+					print_piece(p, bg);
+				bg = (Color)!bg;
+			}
+			bg = (Color)!bg;
+			printf("\n");
+		}
+	}
+	reset_color();
+}
+
+void print_board_marks(Game_State* state, bool flip = false)
+{
+	Board &b = state->board;
+	Color bg = WHITE;
+	reset_color();
+	printf("  A B C D E F G H\n");
+
+	if (flip) {
+		for (int i = 0; i < 8; ++i) {
+			reset_color();
+			printf("%d ", i + 1);
+			for (int j = 0; j < 8; ++j) {
+				Piece p = state->board.piece[i][j];
+				if (p == PIECE_NONE && state->DEBUG_marks.piece[i][j] == PIECE_MARK) {
+					print_piece(PIECE_MARK, bg);
+				}
+				else
+					print_piece(p, bg);
+				bg = (Color)!bg;
+			}
+			bg = (Color)!bg;
+			printf("\n");
+		}
+	} else {
+		for (int i = 7; i >= 0; --i) {
+			reset_color();
+			printf("%d ", i + 1);
+			for (int j = 0; j < 8; ++j) {
+				if (state->DEBUG_marks.piece[i][j] == PIECE_MARK) {
+					print_piece(PIECE_MARK, bg);
+				}
+				else
+					print_piece(PIECE_NONE, bg);
 				bg = (Color)!bg;
 			}
 			bg = (Color)!bg;

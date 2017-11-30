@@ -25,17 +25,6 @@ typedef double r64;
 #include <windows.h>
 #include <windowsx.h>
 
-typedef struct {
-	HWND window_handle;
-	LONG win_width, win_height;
-	WINDOWPLACEMENT g_wpPrev;
-	HDC device_context;
-	HGLRC rendering_context;
-
-	bool move_camera = true;
-	bool do_input = true;
-} Window_State;
-
 #else
 #error OS not yet supported
 #endif

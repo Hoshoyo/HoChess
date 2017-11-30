@@ -48,6 +48,8 @@ enum Piece {
 	PIECE_BLACK_KNIGHT_1,
 
 	NUM_PIECES,
+
+	PIECE_MARK,
 };
 
 struct Piece_State {
@@ -70,4 +72,13 @@ struct Game_State {
 	s32 move_draw = 0;		// number of moves without advancing a pawn or capturing a piece
 	Piece_State piece_state[NUM_PIECES];
 	Board board;
+
+	// DEBUG
+	Board DEBUG_marks;
 };
+
+void board_clear(Game_State* game_state);
+void board_put(Game_State* game_state, Piece piece, s32 line, s32 column);
+void board_mark(Game_State* game_state, s32 line, s32 column);
+void board_mark_clear(Game_State* gs);
+bool is_valid(Game_State* state, Piece p, s32 line, s32 column);

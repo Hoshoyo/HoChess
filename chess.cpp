@@ -26,6 +26,41 @@ Board::Board()
 	piece[7][4] = PIECE_BLACK_KING;
 }
 
+void board_clear(Game_State* gs) {
+	memset(gs->board.piece, PIECE_NONE, sizeof(gs->board.piece));
+	for (s32 p = PIECE_NONE; p < NUM_PIECES; p += 1) {
+		gs->piece_state[p].alive = false;
+		gs->piece_state[p].column = -1;
+		gs->piece_state[p].line = -1;
+		gs->piece_state[p].moved = false;
+		gs->piece_state[p].num_moves = 0;
+	}
+	memset(gs->DEBUG_marks.piece, PIECE_NONE, sizeof(gs->DEBUG_marks.piece));
+}
+
+void board_put(Game_State* gs, Piece p, s32 line, s32 column) {
+	gs->board.piece[line][column] = p;
+	if (p == PIECE_MARK)
+		return;
+	gs->piece_state[p].alive = true;
+	gs->piece_state[p].column = column;
+	gs->piece_state[p].line = line;
+	gs->piece_state[p].moved = false;
+	gs->piece_state[p].num_moves = 0;
+}
+
+void board_mark(Game_State* gs, s32 line, s32 column) {
+	gs->DEBUG_marks.piece[line][column] = PIECE_MARK;
+}
+
+void board_unmark(Game_State* gs, s32 line, s32 column) {
+	gs->DEBUG_marks.piece[line][column] = PIECE_NONE;
+}
+
+void board_mark_clear(Game_State* gs) {
+	memset(gs->DEBUG_marks.piece, PIECE_NONE, sizeof(gs->DEBUG_marks.piece));
+}
+
 bool is_inside_board(s32 value) {
 	if (value < 8 && value >= 0)
 		return true;
@@ -92,6 +127,8 @@ bool is_valid(Game_State* state, Piece p, s32 line, s32 column)
 		return false;
 
 	Piece_State* piece_state = &state->piece_state[p];
+	if (piece_state->line == line && piece_state->column == column)
+		return false;
 	bool valid = false;
 
 	switch (p) {
@@ -110,7 +147,7 @@ bool is_valid(Game_State* state, Piece p, s32 line, s32 column)
 					// pawn is free to move forward
 					valid = true;
 				}
-			} else if (line == piece_state->line + 2 && !piece_state->moved) {
+			} else if (line == piece_state->line + 2 && piece_state->line == 1) {//!piece_state->moved) {
 				if (!is_occupied(state, line - 1, column) && !is_occupied(state, line, column)) {
 					valid = true;
 				}
@@ -143,7 +180,7 @@ bool is_valid(Game_State* state, Piece p, s32 line, s32 column)
 					// pawn is free to move forward
 					valid = true;
 				}
-			} else if (line == piece_state->line - 2 && !piece_state->moved) {
+			} else if (line == piece_state->line - 2 && piece_state->line == 6) {//!piece_state->moved) {
 				if (!is_occupied(state, line + 1, column) && !is_occupied(state, line, column)) {
 					valid = true;
 				}
@@ -166,43 +203,118 @@ bool is_valid(Game_State* state, Piece p, s32 line, s32 column)
 		if ((piece_state->line + 1 >= line && piece_state->line - 1 <= line) &&			// is within 1 line
 			(piece_state->column + 1 >= column && piece_state->column - 1 <= column))		// is within 1 column
 		{
+			valid = true;
 			if (state->board.piece[line][column] != PIECE_NONE) {
-				if (!is_same_color_piece(p, state->board.piece[line][column]))
-					valid = true;
+				if (is_same_color_piece(p, state->board.piece[line][column]))
+					valid = false;
 			}
 		}
 	}break;
 
 	case PIECE_WHITE_QUEEN:
 	case PIECE_BLACK_QUEEN: {
-		s32 y_dir = (line - piece_state->line < 0) ? -1 : 1;
-		s32 x_dir = (column - piece_state->column < 0) ? -1 : 1;
-		for (s32 i = piece_state->line; i >= 0 && i < 8; i += y_dir) {
-			for (s32 j = piece_state->column; j >= 0 && j < 8; j += x_dir) {
 
+		s32 y_dir = (line - piece_state->line < 0) ? -1 : (line - piece_state->line == 0) ? 0 : 1;
+		s32 x_dir = (column - piece_state->column < 0) ? -1 : (column - piece_state->column == 0) ? 0 : 1;
+
+		for (s32 j = piece_state->column + x_dir, i = piece_state->line + y_dir; j >= 0 && j < 8 && i >= 0 && i < 8; j += x_dir, i += y_dir) {
+			if (state->board.piece[i][j] == PIECE_NONE) {
+				if (i == line && j == column) {
+					valid = true;
+					break;
+				}
+				continue;
+			} else if (is_same_color_piece(p, state->board.piece[i][j])) {
+				valid = false;
+				break;
+			} else {
+				if (i == line && j == column) {
+					valid = true;
+					break;
+				} else {
+					valid = false;
+					break;
+				}
 			}
 		}
+
 	}break;
 
 	case PIECE_WHITE_ROOK_0:
 	case PIECE_WHITE_ROOK_1:
 	case PIECE_BLACK_ROOK_0:
 	case PIECE_BLACK_ROOK_1: {
+		s32 y_dir = (line - piece_state->line < 0) ? -1 : (line - piece_state->line == 0) ? 0 : 1;
+		s32 x_dir = (column - piece_state->column < 0) ? -1 : (column - piece_state->column == 0) ? 0 : 1;
+		if (y_dir != 0 && x_dir != 0)
+			return false;
 
+		for (s32 j = piece_state->column + x_dir, i = piece_state->line + y_dir; j >= 0 && j < 8 && i >= 0 && i < 8; j += x_dir, i += y_dir) {
+			if (state->board.piece[i][j] == PIECE_NONE) {
+				if (i == line && j == column) {
+					valid = true;
+					break;
+				}
+				continue;
+			} else if (is_same_color_piece(p, state->board.piece[i][j])) {
+				valid = false;
+				break;
+			} else {
+				if (i == line && j == column) {
+					valid = true;
+					break;
+				} else {
+					valid = false;
+					break;
+				}
+			}
+		}
 	}break;
 
 	case PIECE_WHITE_BISHOP_0:
 	case PIECE_WHITE_BISHOP_1:
 	case PIECE_BLACK_BISHOP_0:
 	case PIECE_BLACK_BISHOP_1: {
+		s32 y_dir = (line - piece_state->line < 0) ? -1 : (line - piece_state->line == 0) ? 0 : 1;
+		s32 x_dir = (column - piece_state->column < 0) ? -1 : (column - piece_state->column == 0) ? 0 : 1;
+		if (y_dir == 0 || x_dir == 0)
+			return false;
 
+		for (s32 j = piece_state->column + x_dir, i = piece_state->line + y_dir; j >= 0 && j < 8 && i >= 0 && i < 8; j += x_dir, i += y_dir) {
+			if (state->board.piece[i][j] == PIECE_NONE) {
+				if (i == line && j == column) {
+					valid = true;
+					break;
+				}
+				continue;
+			} else if (is_same_color_piece(p, state->board.piece[i][j])) {
+				valid = false;
+				break;
+			} else {
+				if (i == line && j == column) {
+					valid = true;
+					break;
+				} else {
+					valid = false;
+					break;
+				}
+			}
+		}
 	}break;
 
 	case PIECE_WHITE_KNIGHT_0:
 	case PIECE_WHITE_KNIGHT_1:
 	case PIECE_BLACK_KNIGHT_0:
 	case PIECE_BLACK_KNIGHT_1: {
-
+		s32 y_diff = line - piece_state->line;
+		y_diff = (y_diff > 0) ? y_diff : -y_diff;
+		s32 x_diff = column - piece_state->column;
+		x_diff = (x_diff > 0) ? x_diff : -x_diff;
+		if (y_diff < 1 || y_diff > 2 || x_diff < 1 || x_diff > 2)
+			return false;
+		else if ((y_diff == 2 && x_diff == 1) || (y_diff == 1 && x_diff == 2))
+			valid = true;
+		
 	}break;
 	}
 	// check if the move leaves the king in check
