@@ -21,7 +21,19 @@ s8* read_console(u32* out_length) {
 			&read, 0
 		);
 	}
+	if (read >= 1 && console_buffer[read - 1] == '\n') {
+		console_buffer[read - 1] = 0;
+		*out_length -= 1;
+	}
+	if (read >= 2 && console_buffer[read - 2] == '\r') {
+		console_buffer[read - 2] = 0;
+		*out_length -= 1;
+	}
 	return console_buffer;
+}
+
+bool string_equal(s8* s1, s8* s2) {
+	return true;
 }
 
 #elif defined(__linux__)
