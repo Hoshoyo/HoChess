@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 		s8* buffer = read_console(&length);
 
 		if (interpret_move(&state, buffer, length)) {
-			switch_turn(&state);
+			//switch_turn(&state);
 			printf("Valid move\n");
 		} else {
 			printf("Invalid move\n");

@@ -1,5 +1,5 @@
-#include <windows.h>
 #include "chess.h"
+#include <stdlib.h>
 
 enum Color {
 	WHITE,
@@ -8,6 +8,8 @@ enum Color {
 	NEUTRAL
 };
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
 void DEBUG_test_colors() {
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	for (int i = 0; i < 1024; ++i) {
@@ -48,6 +50,39 @@ void change_color(Color color, Color bg)
 		}
 	}
 }
+#elif defined(__linux__)
+
+void DEBUG_test_color() {
+}
+
+void reset_color()
+{
+	printf("\033[0m");
+}
+
+void change_color(Color color, Color bg)
+{
+	if (color == WHITE)
+	{
+		if (bg == BLACK)
+			printf("\033[1;40;1;37m");
+		else
+			printf("\033[1;46;1;37m");
+	}
+	else if (color == BLACK || color == NEUTRAL)
+	{
+		if (bg == BLACK)
+			printf("\033[1;40;1;30m");
+		else
+			printf("\033[1;46;1;30m");
+	} else if(color == GREEN) {
+		if(bg == BLACK)
+			printf("\033[1:40;1;30m");
+		else
+			printf("\033[1:46;1;30m");
+	}
+}
+#endif
 
 void print_piece(Piece p, Color bg) {
 	switch (p) {
@@ -118,6 +153,7 @@ void print_piece(Piece p, Color bg) {
 
 void print_board(Game_State* state, bool flip = false) 
 {
+	//system("cls");
 	Board &b = state->board;
 	Color bg = WHITE;
 	reset_color();
@@ -128,11 +164,14 @@ void print_board(Game_State* state, bool flip = false)
 			reset_color();
 			printf("%d ", i + 1);
 			for (int j = 0; j < 8; ++j) {
+				print_piece(state->board.piece[i][j], bg);
+				reset_color();
 				Piece p = state->board.piece[i][j];
 				print_piece(p, bg);
 				bg = (Color)!bg;
 			}
 			bg = (Color)!bg;
+			reset_color();
 			printf("\n");
 		}
 	} else {
@@ -145,6 +184,7 @@ void print_board(Game_State* state, bool flip = false)
 				bg = (Color)!bg;
 			}
 			bg = (Color)!bg;
+			reset_color();
 			printf("\n");
 		}
 	}

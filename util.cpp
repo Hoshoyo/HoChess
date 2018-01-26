@@ -37,5 +37,16 @@ bool string_equal(s8* s1, s8* s2) {
 }
 
 #elif defined(__linux__)
-
+#include <unistd.h>
+s8* read_console(u32* out_length) {
+	int f = dup(STDIN_FILENO);
+	size_t size = read(f, console_buffer, 2048);
+	*out_length = size;
+	while(size == 2048){
+		s8 dump_buffer[2048];
+		size = read(f, dump_buffer, sizeof(dump_buffer));
+	}
+	close(f);
+	return console_buffer;
+}
 #endif

@@ -388,7 +388,8 @@ bool is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 d
 	}break;
 	}
 	// check if the move leaves the king in check
-	if (state->turn == PLAYER_BLACK && is_black_in_check_after_black_move(state, src_rank, src_file, dst_rank, dst_file))
+	
+	if (is_black_piece(moving) && is_black_in_check_after_black_move(state, src_rank, src_file, dst_rank, dst_file))
 		return false;
 	else if (is_white_in_check_after_white_move(state, src_rank, src_file, dst_rank, dst_file))
 		return false;

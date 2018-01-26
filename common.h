@@ -26,5 +26,5 @@ typedef double r64;
 #include <windowsx.h>
 
 #else
-#error OS not yet supported
+//#error OS not yet supported
 #endif
