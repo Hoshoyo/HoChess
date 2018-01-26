@@ -32,10 +32,6 @@ s8* read_console(u32* out_length) {
 	return console_buffer;
 }
 
-bool string_equal(s8* s1, s8* s2) {
-	return true;
-}
-
 #elif defined(__linux__)
 #include <unistd.h>
 s8* read_console(u32* out_length) {
@@ -50,3 +46,10 @@ s8* read_console(u32* out_length) {
 	return console_buffer;
 }
 #endif
+
+bool string_equal(s8* s1, s8* s2) {
+	while (*s1++ == *s2++) {
+		if (*s1 == 0) return true;
+	}
+	return false;
+}

@@ -39,6 +39,8 @@ struct King_State {
 	s32 rank;
 	s32 file;
 	bool in_check;
+	bool can_castle_kingside;
+	bool can_castle_queenside;
 };
 
 struct Game_State {
@@ -56,6 +58,6 @@ void board_clear(Game_State* game_state);
 void board_init(Game_State* game_state);
 void board_put(Game_State* game_state, Piece piece, s32 line, s32 column);
 
-bool is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
+s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
 bool interpret_move(Game_State* state, s8* buffer, u32 length);
 void switch_turn(Game_State* state);
