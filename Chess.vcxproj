@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="chess.cpp" />
+    <ClCompile Include="minmax.cpp" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="util.cpp" />
@@ -27,6 +28,7 @@
   <ItemGroup>
     <ClInclude Include="chess.h" />
     <ClInclude Include="common.h" />
+    <ClInclude Include="minmax.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
