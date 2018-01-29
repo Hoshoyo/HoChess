@@ -1,4 +1,5 @@
 #include "chess.h"
+#include <assert.h>
 
 // @TODO dont differentiate between pieces of the same type
 
@@ -29,6 +30,7 @@ void board_init(Game_State* gs) {
 
 void board_clear(Game_State* gs) {
 	memset(gs->board.piece, PIECE_NONE, sizeof(gs->board.piece));
+	memset(gs->board.selected, 0, sizeof(gs->board.selected));
 }
 
 void board_put(Game_State* gs, Piece p, s32 line, s32 column) {
@@ -45,6 +47,13 @@ void board_put(Game_State* gs, Piece p, s32 line, s32 column) {
 
 bool is_inside_board(s32 value) {
 	if (value < 8 && value >= 0)
+		return true;
+	return false;
+}
+
+bool is_inside_board(s32 rank, s32 file)
+{
+	if (rank < 8 && rank >= 0 && file < 8 && file >= 0)
 		return true;
 	return false;
 }
@@ -221,12 +230,6 @@ bool is_same_color_piece(Piece p1, Piece p2) {
 	}
 }
 
-const s32 INVALID_MOVE = 0;
-const s32 MOVE_VALID = 1;
-const s32 MOVE_VALID_EN_PASSANT = 2;
-const s32 MOVE_VALID_CASTLE_KINGSIDE = 3;
-const s32 MOVE_VALID_CASTLE_QUEENSIDE = 4;
-
 s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file)
 {
 	// LINE = RANK
@@ -234,15 +237,15 @@ s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 ds
 
 	Piece moving = state->board.piece[src_rank][src_file];
 	if (moving == PIECE_NONE)
-		return INVALID_MOVE;
+		return MOVE_INVALID;
 	if (!is_inside_board(dst_rank))
-		return INVALID_MOVE;
+		return MOVE_INVALID;
 	if (!is_inside_board(dst_file))
-		return INVALID_MOVE;
+		return MOVE_INVALID;
 
 	if (src_file == dst_file && src_rank == dst_rank) return false;
 
-	s32 valid = INVALID_MOVE;
+	s32 valid = MOVE_INVALID;
 
 	switch (moving) {
 	case PIECE_WHITE_PAWN: {
@@ -306,13 +309,20 @@ s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 ds
 			valid = MOVE_VALID;
 			if (state->board.piece[dst_rank][dst_file] != PIECE_NONE) {
 				if (is_same_color_piece(moving, state->board.piece[dst_rank][dst_file]))
-					valid = INVALID_MOVE;
+					valid = MOVE_INVALID;
 			}
 		} else if (src_rank == dst_rank && !state->king_state[PLAYER_WHITE].in_check) {
-			if (state->king_state[PLAYER_WHITE].can_castle_kingside && dst_file == src_file + 2)
-				valid = MOVE_VALID_CASTLE_KINGSIDE;
-			else if (state->king_state[PLAYER_WHITE].can_castle_queenside && dst_file == src_file - 2)
-				valid = MOVE_VALID_CASTLE_QUEENSIDE;
+			if (state->king_state[PLAYER_WHITE].can_castle_kingside && dst_file == src_file + 2) {
+				if (state->board.piece[0][6] == PIECE_NONE && state->board.piece[0][5] == PIECE_NONE)
+					valid = MOVE_VALID_CASTLE_KINGSIDE;
+				else
+					return MOVE_INVALID;
+			} else if (state->king_state[PLAYER_WHITE].can_castle_queenside && dst_file == src_file - 2) {
+				if (state->board.piece[0][1] == PIECE_NONE && state->board.piece[0][2] == PIECE_NONE && state->board.piece[0][3] == PIECE_NONE)
+					valid = MOVE_VALID_CASTLE_QUEENSIDE;
+				else
+					return MOVE_INVALID;
+			}
 		}
 	}break;
 	case PIECE_BLACK_KING: {
@@ -322,13 +332,20 @@ s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 ds
 			valid = MOVE_VALID;
 			if (state->board.piece[dst_rank][dst_file] != PIECE_NONE) {
 				if (is_same_color_piece(moving, state->board.piece[dst_rank][dst_file]))
-					valid = INVALID_MOVE;
+					valid = MOVE_INVALID;
 			}
 		} else if (src_rank == dst_rank && !state->king_state[PLAYER_BLACK].in_check) {
-			if (state->king_state[PLAYER_BLACK].can_castle_kingside && dst_file == src_file + 2)
-				valid = MOVE_VALID_CASTLE_KINGSIDE;
-			else if (state->king_state[PLAYER_BLACK].can_castle_queenside && dst_file == src_file - 2)
-				valid = MOVE_VALID_CASTLE_QUEENSIDE;
+			if (state->king_state[PLAYER_BLACK].can_castle_kingside && dst_file == src_file + 2) {
+				if (state->board.piece[7][6] == PIECE_NONE && state->board.piece[7][5] == PIECE_NONE)
+					valid = MOVE_VALID_CASTLE_KINGSIDE;
+				else
+					return MOVE_INVALID;
+			} else if (state->king_state[PLAYER_BLACK].can_castle_queenside && dst_file == src_file - 2) {
+				if (state->board.piece[7][1] == PIECE_NONE && state->board.piece[7][2] == PIECE_NONE && state->board.piece[7][3] == PIECE_NONE)
+					valid = MOVE_VALID_CASTLE_QUEENSIDE;
+				else
+					return MOVE_INVALID;
+			}
 		}
 	}break;
 
@@ -345,14 +362,14 @@ s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 ds
 				}
 				continue;
 			} else if (is_same_color_piece(moving, state->board.piece[i][j])) {
-				valid = INVALID_MOVE;
+				valid = MOVE_INVALID;
 				break;
 			} else {
 				if (i == dst_rank && j == dst_file) {
 					valid = MOVE_VALID;
 					break;
 				} else {
-					valid = INVALID_MOVE;
+					valid = MOVE_INVALID;
 					break;
 				}
 			}
@@ -363,9 +380,9 @@ s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 ds
 	case PIECE_WHITE_ROOK:
 	case PIECE_BLACK_ROOK: {
 		s32 y_dir = (dst_rank - src_rank < 0) ? -1 : (dst_rank - src_rank == 0) ? 0 : 1;
-		s32 x_dir = (dst_file - src_file < 0) ? -1 : (dst_rank - src_rank == 0) ? 0 : 1;
+		s32 x_dir = (dst_file - src_file < 0) ? -1 : (dst_file - src_file == 0) ? 0 : 1;
 		if (y_dir != 0 && x_dir != 0)
-			return INVALID_MOVE;
+			return MOVE_INVALID;
 
 		for (s32 j = src_file + x_dir, i = src_rank + y_dir; j >= 0 && j < 8 && i >= 0 && i < 8; j += x_dir, i += y_dir) {
 			if (state->board.piece[i][j] == PIECE_NONE) {
@@ -375,14 +392,14 @@ s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 ds
 				}
 				continue;
 			} else if (is_same_color_piece(moving, state->board.piece[i][j])) {
-				valid = INVALID_MOVE;
+				valid = MOVE_INVALID;
 				break;
 			} else {
 				if (i == dst_rank && j == dst_file) {
 					valid = MOVE_VALID;
 					break;
 				} else {
-					valid = INVALID_MOVE;
+					valid = MOVE_INVALID;
 					break;
 				}
 			}
@@ -394,7 +411,7 @@ s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 ds
 		s32 y_dir = (dst_rank - src_rank < 0) ? -1 : (dst_rank - src_rank == 0) ? 0 : 1;
 		s32 x_dir = (dst_file - src_file < 0) ? -1 : (dst_file - src_file == 0) ? 0 : 1;
 		if (y_dir == 0 || x_dir == 0)
-			return INVALID_MOVE;
+			return MOVE_INVALID;
 
 		for (s32 j = src_file + x_dir, i = src_rank + y_dir; j >= 0 && j < 8 && i >= 0 && i < 8; j += x_dir, i += y_dir) {
 			if (state->board.piece[i][j] == PIECE_NONE) {
@@ -404,14 +421,14 @@ s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 ds
 				}
 				continue;
 			} else if (is_same_color_piece(moving, state->board.piece[i][j])) {
-				valid = INVALID_MOVE;
+				valid = MOVE_INVALID;
 				break;
 			} else {
 				if (i == dst_rank && j == dst_file) {
 					valid = MOVE_VALID;
 					break;
 				} else {
-					valid = INVALID_MOVE;
+					valid = MOVE_INVALID;
 					break;
 				}
 			}
@@ -425,18 +442,21 @@ s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 ds
 		s32 x_diff = dst_file - src_file;
 		x_diff = (x_diff > 0) ? x_diff : -x_diff;
 		if (y_diff < 1 || y_diff > 2 || x_diff < 1 || x_diff > 2)
-			return INVALID_MOVE;
-		else if ((y_diff == 2 && x_diff == 1) || (y_diff == 1 && x_diff == 2))
+			return MOVE_INVALID;
+		else if ((y_diff == 2 && x_diff == 1) || (y_diff == 1 && x_diff == 2)) {
+			if (is_same_color_piece(moving, state->board.piece[dst_rank][dst_file]))
+				return MOVE_INVALID;
 			valid = MOVE_VALID;
+		}
 		
 	}break;
 	}
 	// check if the move leaves the king in check
 	
 	if (is_black_piece(moving) && is_black_in_check_after_black_move(state, src_rank, src_file, dst_rank, dst_file))
-		return INVALID_MOVE;
+		return MOVE_INVALID;
 	else if (is_white_piece(moving) && is_white_in_check_after_white_move(state, src_rank, src_file, dst_rank, dst_file))
-		return INVALID_MOVE;
+		return MOVE_INVALID;
 	return valid;
 }
 
@@ -464,6 +484,27 @@ void init_game_state(Game_State* game_state) {
 	game_state->king_state[PLAYER_BLACK].can_castle_kingside = true;
 	game_state->king_state[PLAYER_BLACK].can_castle_queenside = true;
 }
+
+void pawn_push_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
+	Piece p = state->board.piece[src_rank][src_file];
+	assert(p == PIECE_BLACK_PAWN || p == PIECE_WHITE_PAWN);
+	state->board.piece[dst_rank][dst_file] = p;
+	state->board.piece[src_rank][src_file] = PIECE_NONE;
+}
+void pawn_capture_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
+	Piece p = state->board.piece[src_rank][src_file];
+	assert(p == PIECE_BLACK_PAWN || p == PIECE_WHITE_PAWN);
+	state->board.piece[dst_rank][dst_file] = p;
+	state->board.piece[src_rank][src_file] = PIECE_NONE;
+}
+void pawn_capture_en_passant_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
+	Piece p = state->board.piece[src_rank][src_file];
+	assert(p == PIECE_BLACK_PAWN || p == PIECE_WHITE_PAWN);
+	state->board.piece[dst_rank][dst_file] = p;
+	state->board.piece[src_rank][dst_file] = PIECE_NONE;
+	state->board.piece[src_rank][src_file] = PIECE_NONE;
+}
+
 
 // returns false on invalid move
 bool interpret_move(Game_State* state, s8* buffer, u32 length) 
@@ -555,4 +596,48 @@ bool interpret_move(Game_State* state, s8* buffer, u32 length)
 	} else {
 		return false;
 	}
+}
+
+Piece get_piece_from_character(s8 color, s8 piece) {
+	if (color == 'B' || color == 'b') {
+		switch (piece) {
+		case 'p':
+		case 'P': return PIECE_BLACK_PAWN;
+		case 'b':
+		case 'B': return PIECE_BLACK_BISHOP;
+		case 'n':
+		case 'N': return PIECE_BLACK_KNIGHT;
+		case 'r':
+		case 'R': return PIECE_BLACK_ROOK;
+		case 'q':
+		case 'Q': return PIECE_BLACK_QUEEN;
+		case 'k':
+		case 'K': return PIECE_BLACK_KING;
+		default:  return PIECE_NONE;
+		}
+	} else if(color == 'W' || color == 'w') {
+		switch (piece) {
+		case 'p':
+		case 'P': return PIECE_WHITE_PAWN;
+		case 'b':
+		case 'B': return PIECE_WHITE_BISHOP;
+		case 'n':
+		case 'N': return PIECE_WHITE_KNIGHT;
+		case 'r':
+		case 'R': return PIECE_WHITE_ROOK;
+		case 'q':
+		case 'Q': return PIECE_WHITE_QUEEN;
+		case 'k':
+		case 'K': return PIECE_WHITE_KING;
+		default:  return PIECE_NONE;
+		}
+	}
+	return PIECE_NONE;
+}
+
+void fill_text_move(s8* buffer, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
+	buffer[0] = src_file + 0x61;
+	buffer[1] = src_rank + 0x31;
+	buffer[2] = dst_file + 0x61;
+	buffer[3] = dst_rank + 0x31;
 }

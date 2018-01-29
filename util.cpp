@@ -49,7 +49,27 @@ s8* read_console(u32* out_length) {
 
 bool string_equal(s8* s1, s8* s2) {
 	while (*s1++ == *s2++) {
-		if (*s1 == 0) return true;
+		if (*s1 == 0 && *s2 == 0) return true;
 	}
 	return false;
+}
+
+bool string_equal_until_length(s8* s1, s8* s2, u32 length) {
+	for (int i = 0; i < length; ++i) {
+		if (s1[i] != s2[i])
+			return false;
+		if (s1[i] == 0 && s2[i] == 0)
+			break;
+	}
+	return true;
+}
+
+void eat_spaces(s8** at) {
+	while (true) {
+		s8 c = **at;
+		if (c == ' ' || c == '\t' || c == '\v' || c == '\f' || c == '\r')
+			++(*at);
+		else
+			break;
+	}
 }

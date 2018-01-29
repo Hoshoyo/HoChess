@@ -33,6 +33,7 @@ enum Piece {
 struct Board {
 	// rank file
 	Piece piece[8][8];
+	bool  selected[8][8];
 };
 
 struct King_State {
@@ -61,3 +62,21 @@ void board_put(Game_State* game_state, Piece piece, s32 line, s32 column);
 s32 is_valid(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
 bool interpret_move(Game_State* state, s8* buffer, u32 length);
 void switch_turn(Game_State* state);
+bool is_inside_board(s32 rank, s32 file);
+
+Piece get_piece_from_character(s8 color, s8 piece);
+void fill_text_move(s8* buffer, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
+
+bool is_white_piece(Piece p);
+bool is_black_piece(Piece p);
+
+// Move Pieces
+void pawn_push_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
+void pawn_capture_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
+void pawn_capture_en_passant_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
+
+const s32 MOVE_INVALID = 0;
+const s32 MOVE_VALID = 1;
+const s32 MOVE_VALID_EN_PASSANT = 2;
+const s32 MOVE_VALID_CASTLE_KINGSIDE = 3;
+const s32 MOVE_VALID_CASTLE_QUEENSIDE = 4;
