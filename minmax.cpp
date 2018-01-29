@@ -2,8 +2,8 @@
 #include <assert.h>
 
 r32 piece_value[NUM_PIECES] = {
-	0,  1,  0,  9,  5,  3,  3, 
-	   -1,  0, -9, -5, -3, -3
+	0,  1,  200,  9,  5,  3,  3, 
+	   -1,  -200, -9, -5, -3, -3
 };
 
 r32 black_pawn_static_weight[8][8] = {
