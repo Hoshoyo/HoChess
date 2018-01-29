@@ -73,6 +73,71 @@ Move_Evaluation minimize(Game_State state, r32 alpha, r32 beta, s32 depth_lvl) {
 		{
 			if (state.turn == PLAYER_BLACK) {
 				switch (state.board.piece[rank][file]) {
+					
+					case PIECE_BLACK_BISHOP: {
+						for(s32 i = rank + 1; i < 8; ++i){
+							for(s32 j = file + 1; j < 8; ++j){
+								Piece p = state.board.piece[i][j];
+								if(p == PIECE_NONE){
+									// move to empty square
+								} else if (is_white_piece(p)) {
+									goto end_bishop_top_right;
+								} else if(is_black_piece(p)) {
+									// capture
+								}
+							}
+						}
+						
+						end_bishop_top_right:
+						
+						for(s32 i = rank + 1; i < 8; ++i){
+							for(s32 j = file - 1; j >= 0; --j){
+								Piece p = state.board.piece[i][j];
+								if(p == PIECE_NONE){
+									// move to empty square
+								} else if (is_white_piece(p)) {
+									goto end_bishop_top_left;
+								} else if(is_black_piece(p)) {
+									// capture
+								}
+							}
+						}
+
+						end_bishop_top_left:
+
+						for(s32 i = rank - 1; i >= 0; --i){
+							for(s32 j = file + 1; j < 8; ++j){
+								Piece p = state.board.piece[i][j];
+								if(p == PIECE_NONE){
+									// move to empty square
+								} else if (is_white_piece(p)) {
+									goto end_bishop_bot_right;
+								} else if(is_black_piece(p)) {
+									// capture
+								}
+							}
+						}
+
+						end_bishop_bot_right:
+
+						for(s32 i = rank - 1; i >= 0; --i){
+							for(s32 j = file - 1; j >= 0; --j){
+								Piece p = state.board.piece[i][j];
+								if(p == PIECE_NONE){
+									// move to empty square
+								} else if (is_white_piece(p)) {
+									goto end_bishop_bot_left;
+								} else if(is_black_piece(p)) {
+									// capture
+								}
+							}
+						}
+
+						end_bishop_bot_left:
+						int x = 0;
+
+					} break;
+
 					case PIECE_BLACK_PAWN: {
 						// captures
 						s32 move = is_valid(&state, rank, file, rank - 1, file + 1);
@@ -179,11 +244,6 @@ Move_Evaluation minimize(Game_State state, r32 alpha, r32 beta, s32 depth_lvl) {
 	}
 	return v;
 }
-
-#define MINIMIZE_CHECKS r32 v_prime = minimize(s, alpha, beta, depth_lvl + 1);	\
-if (v_prime > v) v = v_prime;	\
-if (v_prime >= beta) return v;	\
-if (v_prime > alpha) alpha = v_prime
 
 Move_Evaluation maximize(Game_State state, r32 alpha, r32 beta, s32 depth_lvl) {
 	if(depth_lvl == depth_level){
