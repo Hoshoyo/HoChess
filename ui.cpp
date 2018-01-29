@@ -74,7 +74,7 @@ void clear_screen() {
 #include <stdlib.h>
 
 void clear_screen() {
-	system("clear");
+	int res = system("clear");
 }
 
 void reset_color()

@@ -55,14 +55,14 @@ s8* read_console(u32* out_length) {
 }
 #endif
 
-bool string_equal(s8* s1, s8* s2) {
+bool string_equal(const s8* s1, const s8* s2) {
 	while (*s1++ == *s2++) {
 		if (*s1 == 0 && *s2 == 0) return true;
 	}
 	return false;
 }
 
-bool string_equal_until_length(s8* s1, s8* s2, u32 length) {
+bool string_equal_until_length(const s8* s1, const s8* s2, u32 length) {
 	for (int i = 0; i < length; ++i) {
 		if (s1[i] != s2[i])
 			return false;
