@@ -42,6 +42,14 @@ s8* read_console(u32* out_length) {
 		s8 dump_buffer[2048];
 		size = read(f, dump_buffer, sizeof(dump_buffer));
 	}
+	if (size >= 1 && console_buffer[size - 1] == '\n') {
+		console_buffer[size - 1] = 0;
+		*out_length -= 1;
+	}
+	if (size >= 2 && console_buffer[size - 2] == '\r') {
+		console_buffer[size - 2] = 0;
+		*out_length -= 1;
+	}
 	close(f);
 	return console_buffer;
 }

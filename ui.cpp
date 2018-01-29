@@ -71,12 +71,10 @@ void clear_screen() {
 }
 
 #elif defined(__linux__)
+#include <stdlib.h>
 
 void clear_screen() {
 	system("clear");
-}
-
-void DEBUG_test_color() {
 }
 
 void reset_color()
@@ -84,26 +82,49 @@ void reset_color()
 	printf("\033[0m");
 }
 
-void change_color(Color color, Color bg)
+void DEBUG_test_colors() {
+	// 33 92 Light Green BG - Black Piece
+	// 33 32 Dark Green BG  - Black Piece
+	// 47 32 Dark Green BG  - White Piece
+	// 47 92 Light Green BG - White Piece
+
+	for(int i = 30; i <= 49; ++i){
+		for(int j = 0; j < 255; ++j){
+			printf("\e[%d;7;%dm %d %d Hello \e[0m\n", i, j, i, j);
+		}
+	}
+	reset_color();
+}
+
+void change_color(Color color, Color bg, bool selected)
 {
 	if (color == WHITE)
 	{
-		if (bg == BLACK)
-			printf("\033[1;40;1;37m");
-		else
-			printf("\033[1;46;1;37m");
+		if(selected){
+			if (bg == BLACK)
+				printf("\e[0m\e[32;7;47m");
+			else
+				printf("\e[0m\e[47;7;92m");
+		} else {
+			if (bg == BLACK)
+				printf("\e[0m\e[47;7;90m");
+			else
+				printf("\e[0m\e[45;7;47m");
+		}
 	}
 	else if (color == BLACK || color == NEUTRAL)
 	{
-		if (bg == BLACK)
-			printf("\033[1;40;1;30m");
-		else
-			printf("\033[1;46;1;30m");
-	} else if(color == GREEN) {
-		if(bg == BLACK)
-			printf("\033[1:40;1;30m");
-		else
-			printf("\033[1:46;1;30m");
+		if(selected){
+			if (bg == BLACK)
+				printf("\e[0m\e[49;7;32m");
+			else
+				printf("\e[0m\e[49;7;92m");
+		} else {
+			if (bg == BLACK)
+				printf("\e[0m\e[30;7;90m");
+			else
+				printf("\e[0m\e[30;7;39m");
+		}
 	}
 }
 #endif

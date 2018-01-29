@@ -11,10 +11,12 @@ void select_valid_moves(Game_State* game_state, s32 rank, s32 file);
 void clear_screen();
 
 #define Continue clear_screen(); continue
-#define ErrorContinue(X) clear_screen(); printf("%s\n", X); continue
+#define ErrorContinue(X) clear_screen(); printf(X); continue
+#define ErrorContinue2(X, Y) clear_screen(); printf(X, Y); continue
 
 int main(int argc, char** argv)
 {
+	DEBUG_test_colors();
 	Game_State state;
 	init_game_state(&state);
 	board_clear(&state);
@@ -128,7 +130,7 @@ int main(int argc, char** argv)
 							ErrorContinue("Incorrect statement for putting piece, must inform rank and file. Example: put BK c8\n");
 						}
 					} else {
-						ErrorContinue("Incorrect statement for putting piece, invalid piece '%c', must be (P, B, N, R, Q or K).\n", p);
+						ErrorContinue2("Incorrect statement for putting piece, invalid piece '%c', must be (P, B, N, R, Q or K).\n", p);
 					}
 				} else {
 					ErrorContinue("Incorrect statement for putting piece, must be B (Black) or W (White).\n");
