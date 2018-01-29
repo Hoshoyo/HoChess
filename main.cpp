@@ -16,7 +16,6 @@ void clear_screen();
 
 int main(int argc, char** argv)
 {
-	DEBUG_test_colors();
 	Game_State state;
 	init_game_state(&state);
 	board_clear(&state);
