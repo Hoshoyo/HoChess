@@ -1,0 +1,6 @@
+uci
+isready
+ucinewgame
+isready
+position startpos moves e2e4
+go

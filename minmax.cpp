@@ -54,7 +54,7 @@ r32 evaluate_position(Game_State* state) {
 
 const s32 depth_level = 8;
 
-extern s32 node_count = 0;
+s32 node_count = 0;
 
 Move_Evaluation minimize(Game_State state, r32 alpha, r32 beta, s32 depth_lvl) {
 	if (depth_lvl == depth_level) {
