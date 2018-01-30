@@ -72,8 +72,14 @@ bool is_black_piece(Piece p);
 
 // Move Pieces
 void pawn_push_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
-void pawn_capture_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
-void pawn_capture_en_passant_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
+Piece pawn_capture_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
+Piece pawn_capture_en_passant_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
+void undo_pawn_push_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
+void undo_pawn_capture_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file, Piece p);
+void undo_pawn_capture_en_passant_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file, Piece p);
+
+
+void bishop_move_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file);
 
 const s32 MOVE_INVALID = 0;
 const s32 MOVE_VALID = 1;

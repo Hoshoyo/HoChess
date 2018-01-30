@@ -159,6 +159,24 @@ int main(int argc, char** argv)
 			Continue;
 		}
 
+		// change depth level
+		if(string_equal_until_length("depth", buffer, sizeof("depth") - 1)) {
+			s8* depth = buffer + sizeof("depth") - 1;
+			eat_spaces(&depth);
+			u32 len = strlen(depth);
+			if (len > 0) {
+				s32 value = atoi(depth);
+				if (value < 20) {
+					depth_level = value;
+				} else {
+					ErrorContinue("Depth level too high, must be < 20.\n");
+				}
+			} else {
+				ErrorContinue("Incorrect statement for changing depth search.\n");
+			}
+			Continue;
+		}
+
 		previous_gs = state;
 
 		clear_screen();
@@ -166,7 +184,7 @@ int main(int argc, char** argv)
 			printf("Last move: %s\n", buffer);
 			switch_turn(&state);
 			if (state.turn == PLAYER_BLACK) {
-				Move_Evaluation value = minimize(state, -FLT_MAX, FLT_MAX, 0);
+				Move_Evaluation value = minimize(&state, -FLT_MAX, FLT_MAX, 0);
 				printf("Node count: %d\n", node_count);
 				node_count = 0;
 				s8 engine_move[4] = {};
