@@ -485,26 +485,51 @@ void init_game_state(Game_State* game_state) {
 	game_state->king_state[PLAYER_BLACK].can_castle_queenside = true;
 }
 
+/*
+	Piece Moves
+*/
+
 void pawn_push_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
 	Piece p = state->board.piece[src_rank][src_file];
-	assert(p == PIECE_BLACK_PAWN || p == PIECE_WHITE_PAWN);
 	state->board.piece[dst_rank][dst_file] = p;
 	state->board.piece[src_rank][src_file] = PIECE_NONE;
 }
-void pawn_capture_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
+Piece pawn_capture_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
 	Piece p = state->board.piece[src_rank][src_file];
-	assert(p == PIECE_BLACK_PAWN || p == PIECE_WHITE_PAWN);
+	Piece captured = state->board.piece[dst_rank][dst_file];
 	state->board.piece[dst_rank][dst_file] = p;
 	state->board.piece[src_rank][src_file] = PIECE_NONE;
+	return captured;
 }
-void pawn_capture_en_passant_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
+Piece pawn_capture_en_passant_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
 	Piece p = state->board.piece[src_rank][src_file];
-	assert(p == PIECE_BLACK_PAWN || p == PIECE_WHITE_PAWN);
+	Piece captured = state->board.piece[dst_rank][dst_file];
 	state->board.piece[dst_rank][dst_file] = p;
 	state->board.piece[src_rank][dst_file] = PIECE_NONE;
 	state->board.piece[src_rank][src_file] = PIECE_NONE;
+	return captured;
 }
 
+void undo_pawn_push_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
+	state->board.piece[src_rank][src_file] = state->board.piece[dst_rank][dst_file];
+	state->board.piece[dst_rank][dst_file] = PIECE_NONE;
+}
+void undo_pawn_capture_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file, Piece p) {
+	state->board.piece[src_rank][src_file] = state->board.piece[dst_rank][dst_file];
+	state->board.piece[dst_rank][dst_file] = p;
+}
+void undo_pawn_capture_en_passant_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file, Piece p) {
+	state->board.piece[src_rank][src_file] = state->board.piece[dst_rank][dst_file];
+	state->board.piece[src_rank][dst_file] = p;
+	state->en_passant_file = dst_file;
+}
+
+void bishop_move_unchecked(Game_State* state, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
+	Piece p = state->board.piece[src_rank][src_file];
+	assert(p == PIECE_BLACK_BISHOP || p == PIECE_WHITE_BISHOP);
+	state->board.piece[dst_rank][dst_file] = p;
+	state->board.piece[src_rank][src_file] = PIECE_NONE;
+}
 
 // returns false on invalid move
 bool interpret_move(Game_State* state, s8* buffer, u32 length) 

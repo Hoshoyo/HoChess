@@ -9,6 +9,8 @@ struct Move_Evaluation {
 	r32 evaluation;
 };
 
-Move_Evaluation maximize(Game_State state, r32 alpha, r32 beta, s32 depth_lvl);
-Move_Evaluation minimize(Game_State state, r32 alpha, r32 beta, s32 depth_lvl);
+Move_Evaluation maximize(Game_State* state, r32 alpha, r32 beta, s32 depth_lvl);
+Move_Evaluation minimize(Game_State* state, r32 alpha, r32 beta, s32 depth_lvl);
 r32 evaluate_position(Game_State* state);
+
+extern s32 depth_level;
