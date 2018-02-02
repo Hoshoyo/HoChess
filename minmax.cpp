@@ -52,8 +52,7 @@ r32 evaluate_position(Game_State* state) {
 	return value;
 }
 
-s32 depth_level = 4;
-
+s32 depth_level = 8;
 s32 node_count = 0;
 
 Move_Evaluation minimize(Game_State* state, r32 alpha, r32 beta, s32 depth_lvl) {

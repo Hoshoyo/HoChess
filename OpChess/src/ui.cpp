@@ -1,4 +1,6 @@
+#include "ui.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 enum Color {
 	WHITE,
@@ -195,91 +197,41 @@ void print_piece(u64 p, Color bg, bool selected) {
 	}
 }
 
-void DEBUG_print_board(Board* board){
-	printf("%llx\n", board->black_side);
-	printf("%llx\n", board->black_center);
-	printf("%llx\n", board->white_center);
-	printf("%llx\n", board->white_side);
-	printf("\n");
+void board_select(Board_Select* board_select, u64 rank, u64 file) {
+	*board_select = *board_select | (((u64)1 << rank * 8) << file);
+}
+void board_deselect(Board_Select* board_select, u64 rank, u64 file) {
+	*board_select = *board_select & ~(((u64)1 << rank * 8) << file);
+}
+bool board_is_selected(Board_Select board_select, u64 rank, u64 file) {
+	return (board_select & (((u64)1 << rank * 8) << file)) != 0;
 }
 
-void print_board(Board* board, bool flip = false) 
-{
+void piece_select(Board* board, Game_State* state, Board_Select* bs, u64 rank, u64 file, bool(*validation)(Board*, s32, s32, s32, s32, Game_State*)) {
+	if (board->square[rank][file] == PIECE_NONE) return;
+	//board_select(bs, rank, file);
+	for (int i = 0; i < 8; ++i) {
+		for (int j = 0; j < 8; ++j) {
+			if (validation(board, rank, file, i, j, state)) {
+				board_select(bs, i, j);
+			}
+		}
+	}
+}
+
+void print_board(Board* board, Board_Select board_select) {
 	Color bg = WHITE;
-	reset_color();
 	printf("  A B C D E F G H\n");
 	reset_color();
-	printf("%d ", 8);
-	for(u64 i = 8; i < 16; ++i){
-		print_piece((board->black_side & ((u64)0xf << 4 * i)) >> 4 * i, bg, false);
+	for (s32 i = 7; i >= 0; --i) {
+		reset_color();
+		printf("%d ", i + 1);
+		for (s32 j = 0; j < 8; ++j) {
+			Piece p = board->square[i][j];
+			print_piece(p, bg, board_is_selected(board_select, i, j));
+			bg = (Color)!bg;
+		}
+		printf("\n");
 		bg = (Color)!bg;
 	}
-	reset_color();
-	printf("\n");
-	
-	bg = (Color)!bg;
-	printf("%d ", 7);
-	for(u64 i = 0; i < 8; ++i){
-		print_piece((board->black_side & ((u64)0xf << 4 * i)) >> 4 * i, bg, false);
-		bg = (Color)!bg;
-	}
-	reset_color();
-	printf("\n");
-	
-	bg = (Color)!bg;
-	reset_color();
-	printf("%d ", 6);
-	for(u64 i = 8; i < 16; ++i){
-		print_piece((board->black_center & ((u64)0xf << 4 * i)) >> 4 * i, bg, false);
-		bg = (Color)!bg;
-	}
-	reset_color();
-	printf("\n");
-	
-	bg = (Color)!bg;
-	printf("%d ", 5);
-	for(u64 i = 0; i < 8; ++i){
-		print_piece((board->black_center & ((u64)0xf << 4 * i)) >> 4 * i, bg, false);
-		bg = (Color)!bg;
-	}
-	reset_color();
-	printf("\n");
-	
-	bg = (Color)!bg;
-	reset_color();
-	printf("%d ", 4);
-	for(u64 i = 0; i < 8; ++i){
-		print_piece((board->white_center & ((u64)0xf << 4 * i)) >> 4 * i, bg, false);
-		bg = (Color)!bg;
-	}
-	reset_color();
-	printf("\n");
-	
-	bg = (Color)!bg;
-	printf("%d ", 3);
-	for(u64 i = 8; i < 16; ++i){
-		print_piece((board->white_center & ((u64)0xf << 4 * i)) >> 4 * i, bg, false);
-		bg = (Color)!bg;
-	}
-	reset_color();
-	printf("\n");
-	
-	bg = (Color)!bg;
-	reset_color();
-	printf("%d ", 2);
-	for(u64 i = 8; i < 16; ++i){
-		print_piece((board->white_side & ((u64)0xf << 4 * i)) >> 4 * i, bg, false);
-		bg = (Color)!bg;
-	}
-	reset_color();
-	printf("\n");
-	
-	bg = (Color)!bg;
-	printf("%d ", 1);
-	for(u64 i = 0; i < 8; ++i){
-		print_piece((board->white_side & ((u64)0xf << 4 * i)) >> 4 * i, bg, false);
-		bg = (Color)!bg;
-	}
-	reset_color();
-	printf("\n");
 }

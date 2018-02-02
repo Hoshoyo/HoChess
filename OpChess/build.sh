@@ -1,3 +1,3 @@
 #!/bin/bash
 
-g++ -g -m64 main.cpp -o opchess
+g++ -g -m64 src/main.cpp -o opchess
