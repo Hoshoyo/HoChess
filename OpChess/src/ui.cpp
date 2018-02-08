@@ -207,12 +207,17 @@ bool board_is_selected(Board_Select board_select, u64 rank, u64 file) {
 	return (board_select & (((u64)1 << rank * 8) << file)) != 0;
 }
 
-void piece_select(Board* board, Game_State* state, Board_Select* bs, u64 rank, u64 file, bool(*validation)(Board*, s32, s32, s32, s32, Game_State*)) {
+void piece_select(Board* board, Game_State* state, Board_Select* bs, u64 rank, u64 file, bool(*validation)(Board*, Move, Game_State*)) {
 	if (board->square[rank][file] == PIECE_NONE) return;
 	//board_select(bs, rank, file);
 	for (int i = 0; i < 8; ++i) {
 		for (int j = 0; j < 8; ++j) {
-			if (validation(board, rank, file, i, j, state)) {
+			Move move;
+			move.src_rank = rank;
+			move.src_file = file;
+			move.dst_rank = i;
+			move.dst_file = j;
+			if (validation(board, move, state)) {
 				board_select(bs, i, j);
 			}
 		}
