@@ -1330,14 +1330,14 @@ static void do_move(Game_State* game_state, Board* board, Move move) {
 
 	// switch turn
 	if (game_state->flags & GAME_STATE_WHITE_TO_MOVE) {
-		if (white_in_check(board)) {
-			game_state->flags |= GAME_STATE_WHITE_IN_CHECK;
+		if (black_in_check(board)) {
+			game_state->flags |= GAME_STATE_BLACK_IN_CHECK;
 		}
 		game_state->flags |= GAME_STATE_BLACK_TO_MOVE;
 		game_state->flags &= ~GAME_STATE_WHITE_TO_MOVE;
 	} else {
-		if (black_in_check(board)) {
-			game_state->flags |= GAME_STATE_BLACK_IN_CHECK;
+		if (white_in_check(board)) {
+			game_state->flags |= GAME_STATE_WHITE_IN_CHECK;
 		}
 		game_state->flags |= GAME_STATE_WHITE_TO_MOVE;
 		game_state->flags &= ~GAME_STATE_BLACK_TO_MOVE;
