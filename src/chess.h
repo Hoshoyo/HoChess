@@ -2,6 +2,7 @@
 #include <assert.h>
 #include "common.h"
 #include "util.h"
+#include <string.h>
 
 struct Board
 {
@@ -1460,6 +1461,7 @@ static bool interpret_move(Game_State* state, Board* board, s8* buffer, u32 leng
 	if (valid_move) {
 		do_move(state, board, move);
 	}
+	return true;
 }
 
 enum Fen_Format {
