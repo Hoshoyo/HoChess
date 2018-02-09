@@ -112,12 +112,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\minimax.cpp" />
     <ClCompile Include="src\ui.cpp" />
+    <ClCompile Include="src\util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\chess.h" />
     <ClInclude Include="src\common.h" />
+    <ClInclude Include="src\minimax.h" />
     <ClInclude Include="src\ui.h" />
+    <ClInclude Include="src\util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

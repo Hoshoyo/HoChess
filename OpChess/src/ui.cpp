@@ -208,7 +208,25 @@ bool board_is_selected(Board_Select board_select, u64 rank, u64 file) {
 }
 
 void piece_select(Board* board, Game_State* state, Board_Select* bs, u64 rank, u64 file, bool(*validation)(Board*, Move, Game_State*)) {
-	if (board->square[rank][file] == PIECE_NONE) return;
+	Piece p = board->square[rank][file];
+	if (p == PIECE_NONE) return;
+	if (validation == 0) {
+		switch (p) {
+		case PIECE_WHITE_PAWN:
+		case PIECE_BLACK_PAWN:		validation = pawn_valid_move; break;
+		case PIECE_WHITE_BISHOP:
+		case PIECE_BLACK_BISHOP:	validation = bishop_valid_move; break;
+		case PIECE_WHITE_KNIGHT:
+		case PIECE_BLACK_KNIGHT:	validation = knight_valid_move; break;
+		case PIECE_WHITE_ROOK:
+		case PIECE_BLACK_ROOK:		validation = rook_valid_move; break;
+		case PIECE_WHITE_QUEEN:
+		case PIECE_BLACK_QUEEN:		validation = queen_valid_move; break;
+		case PIECE_WHITE_KING:
+		case PIECE_BLACK_KING:		validation = king_valid_move; break;
+		default: return;
+		}
+	}
 	//board_select(bs, rank, file);
 	for (int i = 0; i < 8; ++i) {
 		for (int j = 0; j < 8; ++j) {
@@ -239,4 +257,5 @@ void print_board(Board* board, Board_Select board_select) {
 		printf("\n");
 		bg = (Color)!bg;
 	}
+	reset_color();
 }

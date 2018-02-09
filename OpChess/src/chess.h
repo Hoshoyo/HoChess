@@ -1,6 +1,7 @@
 #pragma once
 #include <assert.h>
 #include "common.h"
+#include "util.h"
 
 struct Board
 {
@@ -15,14 +16,14 @@ struct Board
 typedef u64 Board_Select;
 typedef s8 Piece;
 
-const u64 GAME_STATE_WHITE_CASTLE_KINGSIDE  = FLAG(0);
-const u64 GAME_STATE_WHITE_CASTLE_QUEENSIDE = FLAG(1);
-const u64 GAME_STATE_BLACK_CASTLE_KINGSIDE  = FLAG(2);
-const u64 GAME_STATE_BLACK_CASTLE_QUEENSIDE = FLAG(3);
-const u64 GAME_STATE_WHITE_IN_CHECK = FLAG(4);
-const u64 GAME_STATE_BLACK_IN_CHECK = FLAG(5);
-const u64 GAME_STATE_WHITE_TO_MOVE = FLAG(6);
-const u64 GAME_STATE_BLACK_TO_MOVE = FLAG(7);
+const u32 GAME_STATE_WHITE_CASTLE_KINGSIDE  = FLAG(0);
+const u32 GAME_STATE_WHITE_CASTLE_QUEENSIDE = FLAG(1);
+const u32 GAME_STATE_BLACK_CASTLE_KINGSIDE  = FLAG(2);
+const u32 GAME_STATE_BLACK_CASTLE_QUEENSIDE = FLAG(3);
+const u32 GAME_STATE_WHITE_IN_CHECK = FLAG(4);
+const u32 GAME_STATE_BLACK_IN_CHECK = FLAG(5);
+const u32 GAME_STATE_WHITE_TO_MOVE = FLAG(6);
+const u32 GAME_STATE_BLACK_TO_MOVE = FLAG(7);
 struct Game_State {
 	u32 flags;
 	s8 en_passant_file;
@@ -35,12 +36,18 @@ struct Position {
 	s8 file;
 };
 
+const s8 MOVE_CAPTURE_EN_PASSANT = FLAG(0);
+const s8 MOVE_CASTLE_KINGSIDE = FLAG(1);
+const s8 MOVE_CASTLE_QUEENSIDE = FLAG(2);
+const s8 MOVE_DOUBLE_PAWN_ADVANCE = FLAG(3);
 struct Move {
 	s8 src_rank;
 	s8 src_file;
 	s8 dst_rank;
 	s8 dst_file;
 	Piece promoting_piece;
+	Piece captured;
+	s8 flags;
 };
 
 static u32 possible_moves_count = 0;
@@ -68,10 +75,25 @@ const Piece PIECE_BLACK_KING	= 14;	// 1110
 #define PIECE_WHITE(P) ((((P) & 8) == 0) && ((P) != 0))
 
 static void game_state_init(Game_State* game_state) {
-	game_state->flags = 0 | GAME_STATE_WHITE_CASTLE_KINGSIDE | GAME_STATE_WHITE_CASTLE_QUEENSIDE | GAME_STATE_BLACK_CASTLE_KINGSIDE | GAME_STATE_BLACK_CASTLE_QUEENSIDE;
+	game_state->flags = 0 | GAME_STATE_WHITE_TO_MOVE | GAME_STATE_WHITE_CASTLE_KINGSIDE | GAME_STATE_WHITE_CASTLE_QUEENSIDE | GAME_STATE_BLACK_CASTLE_KINGSIDE | GAME_STATE_BLACK_CASTLE_QUEENSIDE;
 	game_state->en_passant_file = -1;
 	game_state->half_move_clock = 0;
 	game_state->full_move_count = 0;
+}
+
+static void board_clear(Board* board) {
+	memset(board->square, 0, sizeof(board->square));
+}
+
+static bool is_inside_board(s8 rank, s8 file) {
+	return(rank >= 0 && rank < 8 && file >= 0 && file <= 8);
+}
+
+static bool is_white_turn(Game_State* game_state) {
+	return ((game_state->flags & GAME_STATE_WHITE_TO_MOVE) != 0);
+}
+static bool is_black_turn(Game_State* game_state) {
+	return ((game_state->flags & GAME_STATE_BLACK_TO_MOVE) != 0);
 }
 
 static void board_startpos(Board* board) 
@@ -111,13 +133,28 @@ static void board_startpos(Board* board)
 	board->square[6][7] = PIECE_BLACK_PAWN;
 }
 
+static void board_put(Board* board, s8 rank, s8 file, Piece p) {
+	board->square[rank][file] = p;
+}
+
+static void switch_turn(Game_State* game_state) {
+	// switch turn
+	if (game_state->flags & GAME_STATE_WHITE_TO_MOVE) {
+		game_state->flags |= GAME_STATE_BLACK_TO_MOVE;
+		game_state->flags &= ~GAME_STATE_WHITE_TO_MOVE;
+	} else {
+		game_state->flags |= GAME_STATE_WHITE_TO_MOVE;
+		game_state->flags &= ~GAME_STATE_BLACK_TO_MOVE;
+	}
+}
+
 static bool is_same_color_piece(Piece p1, Piece p2) {
 	assert(p1 && p2);
 	return !((p1 & 8) ^ (p2 & 8));
 }
 
 static bool black_in_check(Board* board, s8 king_rank = -1, s8 king_file = -1) {
-	Position king_pos;
+	Position king_pos = {};
 	if (king_rank != -1 && king_file != -1) {
 		king_pos.rank = king_rank;
 		king_pos.file = king_file;
@@ -310,8 +347,8 @@ found_king:
 }
 
 
-static bool white_in_check(Board* board, s8 king_rank, s8 king_file) {
-	Position king_pos;
+static bool white_in_check(Board* board, s8 king_rank = -1, s8 king_file = -1) {
+	Position king_pos = {};
 	if (king_rank != -1 && king_file != -1) {
 		king_pos.rank = king_rank;
 		king_pos.file = king_file;
@@ -524,7 +561,6 @@ static bool bishop_valid_move(Board* board, Move move, Game_State* state) {
 		return false;
 
 	Piece p = board->square[src_rank][src_file];
-	assert(p == PIECE_WHITE_BISHOP || p == PIECE_BLACK_BISHOP);
 
 	for (s32 r = src_rank + rank_sign, f = src_file + file_sign;
 		r != dst_rank + rank_sign && f != dst_file + file_sign;
@@ -561,7 +597,6 @@ static bool rook_valid_move(Board* board, Move move, Game_State* state) {
 		return false;
 	
 	Piece p = board->square[src_rank][src_file];
-	assert(p == PIECE_WHITE_ROOK || p == PIECE_BLACK_ROOK);
 
 	for (s32 r = src_rank + rank_sign, f = src_file + file_sign;
 		r != dst_rank + rank_sign || f != dst_file + file_sign;
@@ -858,6 +893,8 @@ static void generate_pawn_moves(Position pos, Game_State* game_state, Board* boa
 	Move mv;
 	mv.src_file = pos.file;
 	mv.src_rank = pos.rank;
+	mv.captured = PIECE_NONE;
+	mv.flags = 0;
 
 	s8 move_direction = 1;
 	s8 black_piece_flag = 0;
@@ -908,6 +945,7 @@ static void generate_pawn_moves(Position pos, Game_State* game_state, Board* boa
 			// capture promote
 			mv.dst_file = pos.file + 1;
 			mv.promoting_piece = PIECE_WHITE_QUEEN | black_piece_flag;
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			if (pawn_valid_move(board, mv, game_state)) {
 				PUSH_MOVE(mv);
 				mv.promoting_piece = PIECE_WHITE_ROOK | black_piece_flag;
@@ -920,6 +958,7 @@ static void generate_pawn_moves(Position pos, Game_State* game_state, Board* boa
 
 			mv.dst_file = pos.file - 1;
 			mv.promoting_piece = PIECE_WHITE_QUEEN | black_piece_flag;
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			if (pawn_valid_move(board, mv, game_state)) {
 				PUSH_MOVE(mv);
 				mv.promoting_piece = PIECE_WHITE_ROOK | black_piece_flag;
@@ -932,10 +971,14 @@ static void generate_pawn_moves(Position pos, Game_State* game_state, Board* boa
 		} else {
 			mv.promoting_piece = PIECE_NONE;
 			mv.dst_file = pos.file + 1;
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
+			if (game_state->en_passant_file == pos.file + 1)
+				mv.flags |= MOVE_CAPTURE_EN_PASSANT;
 			if (pawn_valid_move(board, mv, game_state))
 				PUSH_MOVE(mv);
 
 			mv.dst_file = pos.file - 1;
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			if (pawn_valid_move(board, mv, game_state))
 				PUSH_MOVE(mv);
 		}
@@ -945,14 +988,17 @@ static void generate_bishop_moves(Position pos, Game_State* game_state, Board* b
 	Move mv;
 	mv.src_file = pos.file;
 	mv.src_rank = pos.rank;
+	mv.captured = PIECE_NONE;
+	mv.flags = 0;
 
 	// top left
 	for (s32 i = pos.rank + 1, j = pos.file -1 ; i < 8 && j >= 0; ++i, --j) {
 		mv.dst_file = j;
 		mv.dst_rank = i;
-		if (bishop_valid_move(board, mv, game_state))
+		if (bishop_valid_move(board, mv, game_state)) {
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			PUSH_MOVE(mv);
-		else
+		} else
 			break;
 	}
 
@@ -960,9 +1006,10 @@ static void generate_bishop_moves(Position pos, Game_State* game_state, Board* b
 	for (s32 i = pos.rank + 1, j = pos.file + 1; i < 8 && j < 8; ++i, ++j) {
 		mv.dst_file = j;
 		mv.dst_rank = i;
-		if (bishop_valid_move(board, mv, game_state))
+		if (bishop_valid_move(board, mv, game_state)) {
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			PUSH_MOVE(mv);
-		else
+		} else
 			break;
 	}
 
@@ -970,8 +1017,10 @@ static void generate_bishop_moves(Position pos, Game_State* game_state, Board* b
 	for (s32 i = pos.rank - 1, j = pos.file - 1; i >= 0 && j >= 0; --i, --j) {
 		mv.dst_file = j;
 		mv.dst_rank = i;
-		if (bishop_valid_move(board, mv, game_state))
+		if (bishop_valid_move(board, mv, game_state)) {
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			PUSH_MOVE(mv);
+		}
 		else
 			break;
 	}
@@ -980,9 +1029,10 @@ static void generate_bishop_moves(Position pos, Game_State* game_state, Board* b
 	for (s32 i = pos.rank - 1, j = pos.file + 1; i >= 0, j < 8; --i, ++j) {
 		mv.dst_file = j;
 		mv.dst_rank = i;
-		if (bishop_valid_move(board, mv, game_state))
+		if (bishop_valid_move(board, mv, game_state)) {
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			PUSH_MOVE(mv);
-		else
+		} else
 			break;
 	}
 }
@@ -990,76 +1040,98 @@ static void generate_knight_moves(Position pos, Game_State* game_state, Board* b
 	Move mv;
 	mv.src_file = pos.file;
 	mv.src_rank = pos.rank;
+	mv.captured = PIECE_NONE;
+	mv.flags = 0;
 
 	// L up left
 	mv.dst_file = pos.file - 1;
 	mv.dst_rank = pos.rank + 2;
-	if (knight_valid_move(board, mv, game_state))
+	if (knight_valid_move(board, mv, game_state)) {
+		mv.captured = board->square[mv.dst_rank][mv.dst_file];
 		PUSH_MOVE(mv);
+	}
 
 	// L up right
 	mv.dst_file = pos.file + 1;
 	mv.dst_rank = pos.rank + 2;
-	if (knight_valid_move(board, mv, game_state))
+	if (knight_valid_move(board, mv, game_state)) {
+		mv.captured = board->square[mv.dst_rank][mv.dst_file];
 		PUSH_MOVE(mv);
+	}
 
 	// L down left
 	mv.dst_file = pos.file - 1;
 	mv.dst_rank = pos.rank - 2;
-	if (knight_valid_move(board, mv, game_state))
+	if (knight_valid_move(board, mv, game_state)) {
+		mv.captured = board->square[mv.dst_rank][mv.dst_file];
 		PUSH_MOVE(mv);
+	}
 
 	// L down right
 	mv.dst_file = pos.file + 1;
 	mv.dst_rank = pos.rank - 2;
-	if (knight_valid_move(board, mv, game_state))
+	if (knight_valid_move(board, mv, game_state)) {
+		mv.captured = board->square[mv.dst_rank][mv.dst_file];
 		PUSH_MOVE(mv);
+	}
 
 	// L right up
 	mv.dst_file = pos.file + 2;
 	mv.dst_rank = pos.rank + 1;
-	if (knight_valid_move(board, mv, game_state))
+	if (knight_valid_move(board, mv, game_state)) {
+		mv.captured = board->square[mv.dst_rank][mv.dst_file];
 		PUSH_MOVE(mv);
+	}
 
 	// L right down
 	mv.dst_file = pos.file + 2;
 	mv.dst_rank = pos.rank - 1;
-	if (knight_valid_move(board, mv, game_state))
+	if (knight_valid_move(board, mv, game_state)) {
+		mv.captured = board->square[mv.dst_rank][mv.dst_file];
 		PUSH_MOVE(mv);
+	}
 
 	// L left up
 	mv.dst_file = pos.file - 2;
 	mv.dst_rank = pos.rank + 1;
-	if (knight_valid_move(board, mv, game_state))
+	if (knight_valid_move(board, mv, game_state)) {
+		mv.captured = board->square[mv.dst_rank][mv.dst_file];
 		PUSH_MOVE(mv);
+	}
 
 	// L left down
 	mv.dst_file = pos.file - 2;
 	mv.dst_rank = pos.rank - 1;
-	if (knight_valid_move(board, mv, game_state))
+	if (knight_valid_move(board, mv, game_state)) {
+		mv.captured = board->square[mv.dst_rank][mv.dst_file];
 		PUSH_MOVE(mv);
+	}
 }
 static void generate_rook_moves(Position pos, Game_State* game_state, Board* board, Move* moves, u32* num_moves) {
 	Move mv;
 	mv.src_file = pos.file;
 	mv.src_rank = pos.rank;
+	mv.captured = PIECE_NONE;
+	mv.flags = 0;
 
 	// up
 	mv.dst_file = pos.file;
 	for (s32 i = pos.rank + 1; i < 8; ++i) {
 		mv.dst_rank = i;
-		if (rook_valid_move(board, mv, game_state))
+		if (rook_valid_move(board, mv, game_state)) {
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			PUSH_MOVE(mv);
-		else
+		} else
 			break;
 	}
 
 	// down
 	for (s32 i = pos.rank - 1; i >= 0; --i) {
 		mv.dst_rank = i;
-		if (rook_valid_move(board, mv, game_state))
+		if (rook_valid_move(board, mv, game_state)) {
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			PUSH_MOVE(mv);
-		else
+		} else
 			break;
 	}
 
@@ -1067,18 +1139,20 @@ static void generate_rook_moves(Position pos, Game_State* game_state, Board* boa
 	mv.dst_rank = pos.rank;
 	for (s32 i = pos.file - 1; i >= 0; --i) {
 		mv.dst_file = i;
-		if (rook_valid_move(board, mv, game_state))
+		if (rook_valid_move(board, mv, game_state)) {
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			PUSH_MOVE(mv);
-		else
+		} else
 			break;
 	}
 
 	// right
 	for (s32 i = pos.file + 1; i < 8; ++i) {
 		mv.dst_file = i;
-		if (rook_valid_move(board, mv, game_state))
+		if (rook_valid_move(board, mv, game_state)) {
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			PUSH_MOVE(mv);
-		else
+		} else
 			break;
 	}
 }
@@ -1090,62 +1164,91 @@ static void generate_king_moves(Position pos, Game_State* game_state, Board* boa
 	Move mv;
 	mv.src_file = pos.file;
 	mv.src_rank = pos.rank;
+	mv.captured = PIECE_NONE;
+	mv.flags = 0;
 
 	{
 		mv.dst_rank = pos.rank;
 
 		mv.dst_file = pos.file - 1;
-		if (king_valid_move(board, mv, game_state))
+		if (king_valid_move(board, mv, game_state)) {
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			PUSH_MOVE(mv);
+		}
 		mv.dst_file = pos.file + 1;
-		if (king_valid_move(board, mv, game_state))
+		if (king_valid_move(board, mv, game_state)) {
+			mv.captured = board->square[mv.dst_rank][mv.dst_file];
 			PUSH_MOVE(mv);
+		}
 
 		if (pos.rank < 7) {
 			// up
 			mv.dst_rank = pos.rank + 1;
 			mv.dst_file = pos.file;
-			if (king_valid_move(board, mv, game_state))
+			if (king_valid_move(board, mv, game_state)) {
+				mv.captured = board->square[mv.dst_rank][mv.dst_file];
 				PUSH_MOVE(mv);
+			}
 			mv.dst_file = pos.file - 1;
-			if (king_valid_move(board, mv, game_state))
+			if (king_valid_move(board, mv, game_state)) {
+				mv.captured = board->square[mv.dst_rank][mv.dst_file];
 				PUSH_MOVE(mv);
+			}
 			mv.dst_file = pos.file + 1;
-			if (king_valid_move(board, mv, game_state))
+			if (king_valid_move(board, mv, game_state)) {
+				mv.captured = board->square[mv.dst_rank][mv.dst_file];
 				PUSH_MOVE(mv);
+			}
 		}
 
 		if (pos.rank > 0) {
 			// down
 			mv.dst_rank = pos.rank - 1;
 			mv.dst_file = pos.file;
-			if (king_valid_move(board, mv, game_state))
+			if (king_valid_move(board, mv, game_state)) {
+				mv.captured = board->square[mv.dst_rank][mv.dst_file];
 				PUSH_MOVE(mv);
+			}
 			mv.dst_file = pos.file - 1;
-			if (king_valid_move(board, mv, game_state))
+			if (king_valid_move(board, mv, game_state)) {
+				mv.captured = board->square[mv.dst_rank][mv.dst_file];
 				PUSH_MOVE(mv);
+			}
 			mv.dst_file = pos.file + 1;
-			if (king_valid_move(board, mv, game_state))
+			if (king_valid_move(board, mv, game_state)) {
+				mv.captured = board->square[mv.dst_rank][mv.dst_file];
 				PUSH_MOVE(mv);
+			}
 		}
 	}
+	mv.captured = PIECE_NONE;
 
 	if ((game_state->flags & GAME_STATE_WHITE_TO_MOVE) && pos.file == 4 && pos.rank == 0) {
 		mv.dst_rank = pos.rank;
 		mv.dst_file = pos.file - 2;
-		if (king_valid_move(board, mv, game_state))
+		if (king_valid_move(board, mv, game_state)) {
+			mv.flags |= MOVE_CASTLE_QUEENSIDE;
 			PUSH_MOVE(mv);
+		}
 		mv.dst_file = pos.file + 2;
-		if (king_valid_move(board, mv, game_state))
+		mv.flags = 0;
+		if (king_valid_move(board, mv, game_state)) {
+			mv.flags |= MOVE_CASTLE_KINGSIDE;
 			PUSH_MOVE(mv);
+		}
 	} else if(pos.file == 4 && pos.rank == 7) {
 		mv.dst_rank = pos.rank;
 		mv.dst_file = pos.file - 2;
-		if (king_valid_move(board, mv, game_state))
+		if (king_valid_move(board, mv, game_state)) {
+			mv.flags |= MOVE_CASTLE_QUEENSIDE;
 			PUSH_MOVE(mv);
+		}
 		mv.dst_file = pos.file + 2;
-		if (king_valid_move(board, mv, game_state))
+		mv.flags = 0;
+		if (king_valid_move(board, mv, game_state)) {
+			mv.flags |= MOVE_CASTLE_KINGSIDE;
 			PUSH_MOVE(mv);
+		}
 	}
 }
 
@@ -1154,6 +1257,10 @@ static void generate_possible_moves(Game_State* game_state, Board* board, Move* 
 		for (s32 j = 0; j < 8; ++j) {
 			Piece p = board->square[i][j];
 			Position pos = { i, j };
+			if (is_white_turn(game_state) && PIECE_BLACK(p))
+				continue;
+			if (is_black_turn(game_state) && PIECE_WHITE(p))
+				continue;
 			switch (p) {
 				case PIECE_BLACK_PAWN:
 				case PIECE_WHITE_PAWN:		generate_pawn_moves(pos, game_state, board, moves, num_moves); break;
@@ -1173,23 +1280,186 @@ static void generate_possible_moves(Game_State* game_state, Board* board, Move* 
 	}
 }
 
-static bool is_number(s8 c) {
-	if (c >= '0' && c <= '9')
-		return true;
-	return false;
+static void do_move(Game_State* game_state, Board* board, Move move) {
+	Piece p = board->square[move.src_rank][move.src_file];
+	Piece c = move.captured;
+
+	if (c != PIECE_NONE)
+		game_state->half_move_clock = 0;
+	
+	s8 en_passant_file = game_state->en_passant_file;
+	game_state->en_passant_file = -1;
+	game_state->flags &= ~GAME_STATE_WHITE_IN_CHECK;
+	game_state->flags &= ~GAME_STATE_BLACK_IN_CHECK;
+
+	if (p == PIECE_WHITE_PAWN || p == PIECE_BLACK_PAWN) {
+		game_state->half_move_clock = 0;
+		if (move.flags & MOVE_CAPTURE_EN_PASSANT) {
+			// capture en passant
+			assert(move.dst_file == game_state->en_passant_file && move.src_file != move.dst_file);
+
+			board->square[move.dst_rank][move.src_file] = PIECE_NONE;
+		} else if (move.flags & MOVE_DOUBLE_PAWN_ADVANCE) {
+			game_state->en_passant_file = move.src_file;
+		}
+	} else if (p == PIECE_BLACK_KING || p == PIECE_WHITE_KING) {
+		// king castle
+		if (move.flags & MOVE_CASTLE_KINGSIDE) {
+			Piece rook = board->square[move.dst_rank][7];
+			board->square[move.dst_rank][7] = PIECE_NONE;
+			board->square[move.dst_rank][move.dst_file - 1] = rook;
+			game_state->flags &= (rook == PIECE_WHITE_ROOK) ? ~GAME_STATE_WHITE_CASTLE_KINGSIDE : ~GAME_STATE_BLACK_CASTLE_KINGSIDE;
+		} else if (move.flags & MOVE_CASTLE_QUEENSIDE) {
+			Piece rook = board->square[move.dst_rank][0];
+			board->square[move.dst_rank][0] = PIECE_NONE;
+			board->square[move.dst_rank][move.dst_file + 1] = rook;
+			game_state->flags &= (rook == PIECE_WHITE_ROOK) ? ~GAME_STATE_WHITE_CASTLE_QUEENSIDE : ~GAME_STATE_BLACK_CASTLE_QUEENSIDE;
+		} else {
+			if (p == PIECE_BLACK_KING) {
+				game_state->flags &= ~GAME_STATE_BLACK_CASTLE_KINGSIDE;
+				game_state->flags &= ~GAME_STATE_BLACK_CASTLE_QUEENSIDE;
+			} else if (p == PIECE_WHITE_KING) {
+				game_state->flags &= ~GAME_STATE_WHITE_CASTLE_KINGSIDE;
+				game_state->flags &= ~GAME_STATE_WHITE_CASTLE_QUEENSIDE;
+			}
+		}
+	}
+
+	board->square[move.src_rank][move.src_file] = PIECE_NONE;
+	board->square[move.dst_rank][move.dst_file] = p;
+
+	// switch turn
+	if (game_state->flags & GAME_STATE_WHITE_TO_MOVE) {
+		if (white_in_check(board)) {
+			game_state->flags |= GAME_STATE_WHITE_IN_CHECK;
+		}
+		game_state->flags |= GAME_STATE_BLACK_TO_MOVE;
+		game_state->flags &= ~GAME_STATE_WHITE_TO_MOVE;
+	} else {
+		if (black_in_check(board)) {
+			game_state->flags |= GAME_STATE_BLACK_IN_CHECK;
+		}
+		game_state->flags |= GAME_STATE_WHITE_TO_MOVE;
+		game_state->flags &= ~GAME_STATE_BLACK_TO_MOVE;
+	}
+
+	game_state->full_move_count += 1;
 }
 
-static bool is_whitespace(s8 c) {
-	return (c == ' ' || c == '\n' || c == '\v' || c == '\t' || c == '\r');
+static void undo_move(Game_State last_game_state, Game_State* game_state, Board* board, Move move) {
+	Piece p = board->square[move.dst_rank][move.dst_file];
+	Piece c = move.captured;
+
+	if (p == PIECE_WHITE_PAWN || p == PIECE_BLACK_PAWN) {
+		if (move.flags & MOVE_CAPTURE_EN_PASSANT) {
+			// uncapture en passant
+			//board->square[move.dst_rank][move.src_file] = p ^ 8;
+			board->square[move.dst_rank][move.src_file] = move.captured;
+		}
+	} else if (p == PIECE_WHITE_KING || p == PIECE_BLACK_KING) {
+		if (move.flags & MOVE_CASTLE_KINGSIDE) {
+			Piece rook = board->square[move.dst_rank][move.dst_file - 1];
+			board->square[move.dst_rank][move.dst_file - 1] = PIECE_NONE;
+			board->square[move.dst_rank][7] = rook;
+		} else if (move.flags & MOVE_CASTLE_QUEENSIDE) {
+			Piece rook = board->square[move.dst_rank][move.dst_file + 1];
+			board->square[move.dst_rank][move.dst_file + 1] = PIECE_NONE;
+			board->square[move.dst_rank][0] = rook;
+		}
+	}
+
+	board->square[move.dst_rank][move.dst_file] = c;
+	board->square[move.src_rank][move.src_file] = p;
+
+	*game_state = last_game_state;
 }
 
-static s32 str_to_s32(char* text, int length)
+// returns false on invalid move
+static bool interpret_move(Game_State* state, Board* board, s8* buffer, u32 length)
 {
-	s32 result = 0;
-	s32 tenths = 1;
-	for (int i = length - 1; i >= 0; --i, tenths *= 10)
-		result += (text[i] - 0x30) * tenths;
-	return result;
+	// e2e4 e7e8q
+	if (length < 4) return false;
+
+	s8* at = buffer;
+	s8 src_file = at[0] - 0x61;
+	s8 src_rank = at[1] - 0x31;
+	s8 dst_file = at[2] - 0x61;
+	s8 dst_rank = at[3] - 0x31;
+	Piece promoting = PIECE_NONE;
+
+	bool white_turn = (state->flags & GAME_STATE_WHITE_TO_MOVE) != 0;
+	bool black_turn = (state->flags & GAME_STATE_BLACK_TO_MOVE) != 0;
+
+	if (length >= 5) {
+
+		if (white_turn) {
+			switch (at[4]) {
+			case 'q': promoting = PIECE_WHITE_QUEEN; break;
+			case 'b': promoting = PIECE_WHITE_BISHOP; break;
+			case 'n': promoting = PIECE_WHITE_KNIGHT; break;
+			case 'r': promoting = PIECE_WHITE_ROOK; break;
+			default: return false;
+			}
+		} else {
+			switch (at[4]) {
+			case 'q': promoting = PIECE_BLACK_QUEEN; break;
+			case 'b': promoting = PIECE_BLACK_BISHOP; break;
+			case 'n': promoting = PIECE_BLACK_KNIGHT; break;
+			case 'r': promoting = PIECE_BLACK_ROOK; break;
+			default: return false;
+			}
+		}
+
+		if (promoting == PIECE_NONE) return false;
+	}
+
+	Piece moving = board->square[src_rank][src_file];
+	if (PIECE_WHITE(moving) && !white_turn)
+		return false;
+	if (PIECE_BLACK(moving) && !black_turn)
+		return false;
+
+	Move move;
+	move.src_file = src_file;
+	move.src_rank = src_rank;
+	move.dst_file = dst_file;
+	move.dst_rank = dst_rank;
+	move.promoting_piece = promoting;
+	move.flags = 0;
+
+	if ((moving == PIECE_BLACK_PAWN && src_rank - dst_rank == 2) || (moving == PIECE_WHITE_PAWN && dst_rank - src_rank == 2))
+		move.flags |= MOVE_DOUBLE_PAWN_ADVANCE;
+	if (moving == PIECE_BLACK_PAWN || moving == PIECE_WHITE_PAWN) {
+		if (board->square[dst_rank][dst_file] == PIECE_NONE && src_file != dst_file)
+			move.flags |= MOVE_CAPTURE_EN_PASSANT;
+	}
+
+	if (moving == PIECE_WHITE_KING || moving == PIECE_BLACK_KING) {
+		if (src_file - dst_file == 2) move.flags |= MOVE_CASTLE_QUEENSIDE;
+		if (src_file - dst_file == -2) move.flags |= MOVE_CASTLE_KINGSIDE;
+	}
+
+	bool valid_move = false;
+
+	switch (moving) {
+		case PIECE_BLACK_PAWN:
+		case PIECE_WHITE_PAWN:		valid_move = pawn_valid_move(board, move, state); break;
+		case PIECE_BLACK_BISHOP:
+		case PIECE_WHITE_BISHOP:	valid_move = bishop_valid_move(board, move, state); break;
+		case PIECE_BLACK_KNIGHT:
+		case PIECE_WHITE_KNIGHT:	valid_move = knight_valid_move(board, move, state); break;
+		case PIECE_BLACK_ROOK:
+		case PIECE_WHITE_ROOK:		valid_move = rook_valid_move(board, move, state); break;
+		case PIECE_BLACK_QUEEN:
+		case PIECE_WHITE_QUEEN:		valid_move = queen_valid_move(board, move, state); break;
+		case PIECE_BLACK_KING:
+		case PIECE_WHITE_KING:		valid_move = king_valid_move(board, move, state); break;
+		default: break;
+	}
+
+	if (valid_move) {
+		do_move(state, board, move);
+	}
 }
 
 enum Fen_Format {
@@ -1326,4 +1596,48 @@ static s32 parse_fen(s8* fen, Board* board, Game_State* state) {
 	}
 
 	return 0;
+}
+
+static Piece get_piece_from_character(s8 color, s8 piece) {
+	if (color == 'B' || color == 'b') {
+		switch (piece) {
+		case 'p':
+		case 'P': return PIECE_BLACK_PAWN;
+		case 'b':
+		case 'B': return PIECE_BLACK_BISHOP;
+		case 'n':
+		case 'N': return PIECE_BLACK_KNIGHT;
+		case 'r':
+		case 'R': return PIECE_BLACK_ROOK;
+		case 'q':
+		case 'Q': return PIECE_BLACK_QUEEN;
+		case 'k':
+		case 'K': return PIECE_BLACK_KING;
+		default:  return PIECE_NONE;
+		}
+	} else if (color == 'W' || color == 'w') {
+		switch (piece) {
+		case 'p':
+		case 'P': return PIECE_WHITE_PAWN;
+		case 'b':
+		case 'B': return PIECE_WHITE_BISHOP;
+		case 'n':
+		case 'N': return PIECE_WHITE_KNIGHT;
+		case 'r':
+		case 'R': return PIECE_WHITE_ROOK;
+		case 'q':
+		case 'Q': return PIECE_WHITE_QUEEN;
+		case 'k':
+		case 'K': return PIECE_WHITE_KING;
+		default:  return PIECE_NONE;
+		}
+	}
+	return PIECE_NONE;
+}
+
+static void fill_text_move(s8* buffer, s32 src_rank, s32 src_file, s32 dst_rank, s32 dst_file) {
+	buffer[0] = src_file + 0x61;
+	buffer[1] = src_rank + 0x31;
+	buffer[2] = dst_file + 0x61;
+	buffer[3] = dst_rank + 0x31;
 }
